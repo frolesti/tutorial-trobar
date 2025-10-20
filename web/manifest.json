@@ -1,6 +1,6 @@
 {
-    "name": "pizza_app",
-    "short_name": "pizza_app",
+    "name": "trobar_app",
+    "short_name": "trobar_app",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

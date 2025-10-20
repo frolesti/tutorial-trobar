@@ -1,3 +1,3 @@
-# pizza_app
+# trobar_app
 
 A new Flutter project.
