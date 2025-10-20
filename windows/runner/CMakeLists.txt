@@ -38,3 +38,19 @@ target_include_directories(${BINARY_NAME} PRIVATE "${CMAKE_SOURCE_DIR}")
 
 # Run the Flutter tool portions of the build. This must not be removed.
 add_dependencies(${BINARY_NAME} flutter_assemble)
+
+# Add these lines near the top after project()
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# Add before target_link_libraries
+target_compile_definitions(${BINARY_NAME} PRIVATE
+  "_HAS_STD_BYTE=0"
+  "_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS"
+  "_CRT_SECURE_NO_WARNINGS"
+)
+
+target_compile_options(${BINARY_NAME} PRIVATE
+  /bigobj
+  /EHsc
+)
