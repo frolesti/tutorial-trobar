@@ -1,5 +1,7 @@
 import 'dart:developer';
 import 'package:bloc/bloc.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
 
 class SimpleBlocObserver extends BlocObserver {
   @override
@@ -17,7 +19,7 @@ class SimpleBlocObserver extends BlocObserver {
   @override
   void onChange(BlocBase bloc, Change change) {
     super.onChange(bloc, change);
-    log('onChange -- bloc: ${bloc.runtimeType}, change: $change');
+    debugPrint('${bloc.runtimeType} $change');
   }
 
   @override
@@ -28,7 +30,7 @@ class SimpleBlocObserver extends BlocObserver {
 
   @override
   void onError(BlocBase bloc, Object error, StackTrace stackTrace) {
-    log('onError -- bloc: ${bloc.runtimeType}, error: $error');
+    debugPrint('${bloc.runtimeType} $error $stackTrace');
     super.onError(bloc, error, stackTrace);
   }
 

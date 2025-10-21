@@ -1,9 +1,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:pizza_app/screens/auth/blocs/sing_in_bloc/sign_in_bloc.dart';
-import 'package:pizza_app/screens/home/blocs/get_pizza_bloc/get_pizza_bloc.dart';
-import 'package:pizza_app/screens/home/views/details_screen.dart';
+import '../../auth/blocs/sing_in_bloc/sign_in_bloc.dart';
+import '../blocs/get_pizza_bloc/get_pizza_bloc.dart';
+import 'details_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -11,9 +11,9 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.background,
+      backgroundColor: Theme.of(context).colorScheme.surface, // Updated from background
       appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.background,
+        backgroundColor: Theme.of(context).colorScheme.surface, // Updated from background
         title: Row(
           children: [
             Image.asset('assets/8.png', scale: 14),
