@@ -1,8 +1,6 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:user_repository/user_repository.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
-import '../../../components/my_text_field.dart';
 import '../blocs/sign_up_bloc/sign_up_bloc.dart';
 
 class SignUpScreen extends StatefulWidget {
@@ -13,264 +11,279 @@ class SignUpScreen extends StatefulWidget {
 }
 
 class _SignUpScreenState extends State<SignUpScreen> {
-	final passwordController = TextEditingController();
   final emailController = TextEditingController();
-	final nameController = TextEditingController();
+  final passwordController = TextEditingController();
+  final nameController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-	IconData iconPassword = CupertinoIcons.eye_fill;
-	bool obscurePassword = true;
-	bool signUpRequired = false;
+  bool _obscurePassword = true;
 
-	bool containsUpperCase = false;
-	bool containsLowerCase = false;
-	bool containsNumber = false;
-	bool containsSpecialChar = false;
-	bool contains8Length = false;
+  @override
+  void dispose() {
+    emailController.dispose();
+    passwordController.dispose();
+    nameController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return BlocListener<SignUpBloc, SignUpState>(
-			listener: (context, state) {
-				if(state is SignUpSuccess) {
-					setState(() {
-					  signUpRequired = false;
-					});
-				} else if(state is SignUpProcess) {
-					setState(() {
-					  signUpRequired = true;
-					});
-				} else if(state is SignUpFailure) {
-					return;
-				} 
-			},
-			child: Form(
-        key: _formKey,
-        child: Center(
+      listener: (context, state) {
+        if (state is SignUpSuccess) {
+          Navigator.pop(context);
+        } else if (state is SignUpFailure) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Error al registrar-se'),
+              backgroundColor: colorScheme.error,
+            ),
+          );
+        }
+      },
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Form(
+          key: _formKey,
           child: Column(
             children: [
-              const SizedBox(height: 20),
-              SizedBox(
-                width: MediaQuery.of(context).size.width * 0.9,
-                child: MyTextField(
-                  controller: emailController,
-                  hintText: 'Email',
-                  obscureText: false,
-                  keyboardType: TextInputType.emailAddress,
-                  prefixIcon: const Icon(CupertinoIcons.mail_solid),
-                  validator: (val) {
-                    if(val!.isEmpty) {
-                      return 'Please fill in this field';													
-                    } else if(!RegExp(r'^[\w-\.]+@([\w-]+.)+[\w-]{2,4}$').hasMatch(val)) {
-                      return 'Please enter a valid email';
-                    }
-                    return null;
-                  }
+              const SizedBox(height: 40),
+
+              // Illustration placeholder
+              Container(
+                width: 120,
+                height: 120,
+                decoration: BoxDecoration(
+                  color: colorScheme.secondaryContainer,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.person_add_outlined,
+                  size: 60,
+                  color: colorScheme.onSecondaryContainer,
                 ),
               ),
-              const SizedBox(height: 10),
-              SizedBox(
-                width: MediaQuery.of(context).size.width * 0.9,
-                child: MyTextField(
-                  controller: passwordController,
-                  hintText: 'Password',
-                  obscureText: obscurePassword,
-                  keyboardType: TextInputType.visiblePassword,
-                  prefixIcon: const Icon(CupertinoIcons.lock_fill),
-                  onChanged: (val) {
-                    if(val!.contains(RegExp(r'[A-Z]'))) {
-                      setState(() {
-                        containsUpperCase = true;
-                      });
-                    } else {
-                      setState(() {
-                        containsUpperCase = false;
-                      });
-                    }
-                    if(val.contains(RegExp(r'[a-z]'))) {
-                      setState(() {
-                        containsLowerCase = true;
-                      });
-                    } else {
-                      setState(() {
-                        containsLowerCase = false;
-                      });
-                    }
-                    if(val.contains(RegExp(r'[0-9]'))) {
-                      setState(() {
-                        containsNumber = true;
-                      });
-                    } else {
-                      setState(() {
-                        containsNumber = false;
-                      });
-                    }
-                    if(val.contains(RegExp(r'^(?=.*?[!@#$&*~`)\%\-(_+=;:,.<>/?"[{\]}\|^])'))) {
-                      setState(() {
-                        containsSpecialChar = true;
-                      });
-                    } else {
-                      setState(() {
-                        containsSpecialChar = false;
-                      });
-                    }
-                    if(val.length >= 8) {
-                      setState(() {
-                        contains8Length = true;
-                      });
-                    } else {
-                      setState(() {
-                        contains8Length = false;
-                      });
-                    }
-                    return null;
-                  },
+              const SizedBox(height: 24),
+
+              // Title
+              Text(
+                'Crea el teu compte',
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: colorScheme.onSurface,
+                    ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Uneix-te a la comunitat de Trobar',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 32),
+
+              // Name Field
+              TextFormField(
+                controller: nameController,
+                textCapitalization: TextCapitalization.words,
+                style: Theme.of(context).textTheme.bodyLarge,
+                decoration: InputDecoration(
+                  labelText: 'Nom complet',
+                  hintText: 'Joan García',
+                  prefixIcon: Icon(Icons.person_outline,
+                      color: colorScheme.onSurfaceVariant),
+                  filled: true,
+                  fillColor: colorScheme.surfaceContainerHighest,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: colorScheme.primary, width: 2),
+                  ),
+                  errorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: colorScheme.error, width: 2),
+                  ),
+                  focusedErrorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: colorScheme.error, width: 2),
+                  ),
+                ),
+                validator: (val) {
+                  if (val == null || val.isEmpty) {
+                    return 'Si us plau, introdueix el teu nom';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+
+              // Email Field
+              TextFormField(
+                controller: emailController,
+                keyboardType: TextInputType.emailAddress,
+                style: Theme.of(context).textTheme.bodyLarge,
+                decoration: InputDecoration(
+                  labelText: 'Correu electrònic',
+                  hintText: 'exemple@correu.com',
+                  prefixIcon: Icon(Icons.email_outlined,
+                      color: colorScheme.onSurfaceVariant),
+                  filled: true,
+                  fillColor: colorScheme.surfaceContainerHighest,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: colorScheme.primary, width: 2),
+                  ),
+                  errorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: colorScheme.error, width: 2),
+                  ),
+                  focusedErrorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: colorScheme.error, width: 2),
+                  ),
+                ),
+                validator: (val) {
+                  if (val == null || val.isEmpty) {
+                    return 'Si us plau, introdueix el teu correu';
+                  } else if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+                      .hasMatch(val)) {
+                    return 'Correu invàlid';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+
+              // Password Field
+              TextFormField(
+                controller: passwordController,
+                obscureText: _obscurePassword,
+                style: Theme.of(context).textTheme.bodyLarge,
+                decoration: InputDecoration(
+                  labelText: 'Contrasenya',
+                  hintText: 'Mínim 6 caràcters',
+                  prefixIcon: Icon(Icons.lock_outline,
+                      color: colorScheme.onSurfaceVariant),
                   suffixIcon: IconButton(
                     onPressed: () {
                       setState(() {
-                        obscurePassword = !obscurePassword;
-                        if(obscurePassword) {
-                          iconPassword = CupertinoIcons.eye_fill;
-                        } else {
-                          iconPassword = CupertinoIcons.eye_slash_fill;
-                        }
+                        _obscurePassword = !_obscurePassword;
                       });
                     },
-                    icon: Icon(iconPassword),
-                  ),
-                  validator: (val) {
-                    if(val!.isEmpty) {
-                      return 'Please fill in this field';			
-                    } else if(!RegExp(r'^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[!@#\$&*~`)\%\-(_+=;:,.<>/?"[{\]}\|^]).{8,}$').hasMatch(val)) {
-                      return 'Please enter a valid password';
-                    }
-                    return null;
-                  }
-                ),
-              ),
-              const SizedBox(height: 10),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "⚈  1 uppercase",
-                        style: TextStyle(
-                          color: containsUpperCase
-                            ? Colors.green
-                            : Theme.of(context).colorScheme.onSurface
-                        ),
-                      ),
-                      Text(
-                        "⚈  1 lowercase",
-                        style: TextStyle(
-                          color: containsLowerCase
-                            ? Colors.green
-                            : Theme.of(context).colorScheme.onSurface
-                        ),
-                      ),
-                      Text(
-                        "⚈  1 number",
-                        style: TextStyle(
-                          color: containsNumber
-                            ? Colors.green
-                            : Theme.of(context).colorScheme.onSurface
-                        ),
-                      ),
-                    ],
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "⚈  1 special character",
-                        style: TextStyle(
-                          color: containsSpecialChar
-                            ? Colors.green
-                            : Theme.of(context).colorScheme.onSurface
-                        ),
-                      ),
-                      Text(
-                        "⚈  8 minimum character",
-                        style: TextStyle(
-                          color: contains8Length
-                            ? Colors.green
-                            : Theme.of(context).colorScheme.onSurface
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              SizedBox(
-                width: MediaQuery.of(context).size.width * 0.9,
-                child: MyTextField(
-                  controller: nameController,
-                  hintText: 'Name',
-                  obscureText: false,
-                  keyboardType: TextInputType.name,
-                  prefixIcon: const Icon(CupertinoIcons.person_fill),
-                  validator: (val) {
-                    if(val!.isEmpty) {
-                      return 'Please fill in this field';													
-                    } else if(val.length > 30) {
-                      return 'Name too long';
-                    }
-                    return null;
-                  }
-                ),
-              ),
-              SizedBox(height: MediaQuery.of(context).size.height * 0.02),
-              !signUpRequired
-                ? SizedBox(
-                    width: MediaQuery.of(context).size.width * 0.5,
-                    child: TextButton(
-                      onPressed: () {
-                        if (_formKey.currentState!.validate()) {
-                          MyUser myUser = MyUser.empty;
-                          myUser.email = emailController.text;
-                          myUser.name = nameController.text;
-                          
-                          setState(() {
-                            context.read<SignUpBloc>().add(
-                              SignUpRequired(
-                                myUser,
-                                passwordController.text
-                              )
-                            );
-                          });																			
-                        }
-                      },
-                      style: TextButton.styleFrom(
-                        elevation: 3.0,
-                        backgroundColor: Theme.of(context).colorScheme.primary,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(60)
-                        )
-                      ),
-                      child: const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 25, vertical: 5),
-                        child: Text(
-                          'Sign Up',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600
-                          ),
-                        ),
-                      )
+                    icon: Icon(
+                      _obscurePassword
+                          ? Icons.visibility_off
+                          : Icons.visibility,
+                      color: colorScheme.onSurfaceVariant,
                     ),
-                  )
-                : const CircularProgressIndicator()
+                  ),
+                  filled: true,
+                  fillColor: colorScheme.surfaceContainerHighest,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: colorScheme.primary, width: 2),
+                  ),
+                  errorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: colorScheme.error, width: 2),
+                  ),
+                  focusedErrorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: colorScheme.error, width: 2),
+                  ),
+                ),
+                validator: (val) {
+                  if (val == null || val.isEmpty) {
+                    return 'Si us plau, introdueix una contrasenya';
+                  } else if (val.length < 6) {
+                    return 'Mínim 6 caràcters';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 32),
+
+              // Sign Up Button
+              BlocBuilder<SignUpBloc, SignUpState>(
+                builder: (context, state) {
+                  return SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: state is SignUpProcess
+                        ? Center(
+                            child: CircularProgressIndicator(
+                              color: colorScheme.primary,
+                            ),
+                          )
+                        : FilledButton(
+                            onPressed: () {
+                              if (_formKey.currentState!.validate()) {
+                                // Crear MyUser directament - SIMPLE!
+                                final myUser = MyUser(
+                                  userId: '',
+                                  email: emailController.text.trim(),
+                                  name: nameController.text.trim(),
+                                );
+
+                                context.read<SignUpBloc>().add(
+                                      SignUpRequired(
+                                        myUser,
+                                        passwordController.text,
+                                      ),
+                                    );
+                              }
+                            },
+                            style: FilledButton.styleFrom(
+                              backgroundColor: colorScheme.primary,
+                              foregroundColor: colorScheme.onPrimary,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: Text(
+                              'CREAR COMPTE',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelLarge
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 1.2,
+                                  ),
+                            ),
+                          ),
+                  );
+                },
+              ),
+              const SizedBox(height: 24),
             ],
           ),
         ),
       ),
-		);
+    );
   }
 }

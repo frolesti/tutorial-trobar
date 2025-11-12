@@ -1,11 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:pizza_repository/pizza_repository.dart';  // Add this import
-import 'blocs/authentication_bloc/authentication_bloc.dart';
-import 'screens/auth/blocs/sing_in_bloc/sign_in_bloc.dart';
-import 'screens/home/blocs/get_pizza_bloc/get_pizza_bloc.dart';
-import 'screens/auth/views/welcome_screen.dart';
-import 'screens/home/views/home_screen.dart';
+import 'blocs/map_bloc/map_bloc.dart';
+import 'screens/map/map_screen.dart';
 
 class MyAppView extends StatelessWidget {
   const MyAppView({super.key});
@@ -14,35 +10,19 @@ class MyAppView extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Trobar',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF004D98),
-          primary: const Color(0xFF004D98),
-          secondary: const Color(0xFFA50044),
-        ),
         useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF004D98), // Barça blue
+          secondary: const Color(0xFFFDB827), // Barça gold
+          tertiary: const Color(0xFFDC0030), // Red accent
+          brightness: Brightness.light,
+        ),
       ),
-      home: BlocBuilder<AuthenticationBloc, AuthenticationState>(
-        builder: (context, state) {
-          if (state.status == AuthenticationStatus.authenticated) {
-            return MultiBlocProvider(
-              providers: [
-                BlocProvider(
-                  create: (context) => SignInBloc(
-                    context.read<AuthenticationBloc>().userRepository,
-                  ),
-                ),
-                BlocProvider(
-                  create: (context) => GetPizzaBloc(
-                    FirebasePizzaRepo(), // Or inject this through constructor
-                  )..add(const GetPizza()),
-                ),
-              ],
-              child: const HomeScreen(),
-            );
-          }
-          return const WelcomeScreen();
-        },
+      home: BlocProvider(
+        create: (context) => MapBloc(),
+        child: const MapScreen(),
       ),
     );
   }

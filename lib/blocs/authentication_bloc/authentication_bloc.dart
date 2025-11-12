@@ -19,11 +19,15 @@ class AuthenticationBloc extends Bloc<AuthenticationEvent, AuthenticationState> 
     });
 
     on<AuthenticationUserChanged>((event, emit) {
-      if(event.user != MyUser.empty) {
+      if (event.user != null && event.user != MyUser.empty) {
         emit(AuthenticationState.authenticated(event.user!));
       } else {
         emit(const AuthenticationState.unauthenticated());
       }
+    });
+
+    on<AuthenticationLogoutRequested>((event, emit) async {
+      await userRepository.logOut();
     });
   }
 
