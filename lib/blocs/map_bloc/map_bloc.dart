@@ -65,6 +65,12 @@ class MapBloc extends Bloc<MapEvent, MapState> {
   }
 
   void _onBarSelected(MapBarSelected event, Emitter<MapState> emit) {
-    emit(state.copyWith(selectedBar: event.bar));
+    if (event.bar == null) {
+      // Tancar la targeta de detalls
+      emit(state.copyWith(clearSelectedBar: true));
+    } else {
+      // Seleccionar un bar
+      emit(state.copyWith(selectedBar: event.bar));
+    }
   }
 }

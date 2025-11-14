@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../blocs/map_bloc/map_bloc.dart';
 import '../../../models/bar.dart';
 
@@ -7,6 +9,55 @@ class BarDetailsCard extends StatelessWidget {
   final Bar bar;
 
   const BarDetailsCard({super.key, required this.bar});
+
+  Future<void> _openMapsNavigation(BuildContext context) async {
+    final state = context.read<MapBloc>().state;
+    final userLat = state.currentLatitude;
+    final userLng = state.currentLongitude;
+
+    // URL per Google Maps (Android, Web i per defecte)
+    final googleMapsUrl = Uri.parse(
+      'https://www.google.com/maps/dir/?api=1&origin=$userLat,$userLng&destination=${bar.latitude},${bar.longitude}&travelmode=walking'
+    );
+
+    // URL per Apple Maps (iOS)
+    final appleMapsUrl = Uri.parse(
+      'https://maps.apple.com/?saddr=$userLat,$userLng&daddr=${bar.latitude},${bar.longitude}&dirflg=w'
+    );
+
+    try {
+      Uri urlToLaunch;
+      
+      // Per Web sempre Google Maps
+      if (kIsWeb) {
+        urlToLaunch = googleMapsUrl;
+      } else {
+        // Per mòbil, intentar detectar la plataforma
+        // Si està en iOS, usar Apple Maps, sinó Google Maps
+        urlToLaunch = Theme.of(context).platform == TargetPlatform.iOS
+            ? appleMapsUrl
+            : googleMapsUrl;
+      }
+
+      if (await canLaunchUrl(urlToLaunch)) {
+        await launchUrl(
+          urlToLaunch,
+          mode: LaunchMode.externalApplication,
+        );
+      } else {
+        throw 'No es pot obrir el mapa';
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error obrint el mapa: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -230,17 +281,32 @@ class BarDetailsCard extends StatelessWidget {
   }
 
   Widget _buildActionButton(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: FilledButton.icon(
-        onPressed: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Pròximament: Detalls complets del bar')),
-          );
-        },
-        icon: const Icon(Icons.arrow_forward),
-        label: const Text('Veure detalls'),
-      ),
+    return Row(
+      children: [
+        Expanded(
+          child: FilledButton.icon(
+            onPressed: () => _openMapsNavigation(context),
+            icon: const Icon(Icons.directions),
+            label: const Text('Com arribar'),
+            style: FilledButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        FilledButton.icon(
+          onPressed: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Pròximament: Detalls complets')),
+            );
+          },
+          icon: const Icon(Icons.info_outline),
+          label: const Text(''),
+          style: FilledButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          ),
+        ),
+      ],
     );
   }
 }

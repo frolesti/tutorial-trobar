@@ -25,6 +25,7 @@ class MapState extends Equatable {
     double? currentLongitude,
     List<Bar>? nearbyBars,
     Bar? selectedBar,
+    bool clearSelectedBar = false, // ⬅️ Nou paràmetre
     String? errorMessage,
   }) {
     return MapState(
@@ -32,7 +33,7 @@ class MapState extends Equatable {
       currentLatitude: currentLatitude ?? this.currentLatitude,
       currentLongitude: currentLongitude ?? this.currentLongitude,
       nearbyBars: nearbyBars ?? this.nearbyBars,
-      selectedBar: selectedBar ?? this.selectedBar,
+      selectedBar: clearSelectedBar ? null : (selectedBar ?? this.selectedBar), // ⬅️ Lògica millorada
       errorMessage: errorMessage ?? this.errorMessage,
     );
   }

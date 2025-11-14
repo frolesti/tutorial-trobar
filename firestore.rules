@@ -1,0 +1,42 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Regles per a la col·lecció 'bars'
+    match /bars/{barId} {
+      // Lectura pública per a bars actius
+      allow read: if true;
+      
+      // Escriptura només per a usuaris autenticats
+      allow create: if request.auth != null;
+      allow update: if request.auth != null;
+      allow delete: if request.auth != null;
+    }
+    
+    // Regles per a la col·lecció 'match_schedule'
+    match /match_schedule/{matchId} {
+      // Lectura pública
+      allow read: if true;
+      
+      // Escriptura només per a admins (pots ajustar això)
+      allow write: if request.auth != null;
+    }
+    
+    // Regles per a la col·lecció 'users'
+    match /users/{userId} {
+      // Cada usuari pot llegir i escriure el seu propi document
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && request.auth.uid == userId;
+      
+      // Els admins poden llegir tots els usuaris
+      allow read: if request.auth != null && 
+                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    // Per defecte, denegar tot l'accés
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

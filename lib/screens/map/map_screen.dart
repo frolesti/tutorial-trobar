@@ -1,10 +1,12 @@
 import 'dart:ui' as ui;
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../blocs/authentication_bloc/authentication_bloc.dart';
 import '../../blocs/map_bloc/map_bloc.dart';
 import '../../config/map_style.dart';
+import '../../models/bar.dart';
 import 'widgets/bar_details_card.dart';
 
 class MapScreen extends StatefulWidget {
@@ -19,6 +21,8 @@ class _MapScreenState extends State<MapScreen> {
   Set<Marker> _markers = {};
   BitmapDescriptor? _userIcon;
   BitmapDescriptor? _barIcon;
+  bool _hasInitializedCamera = false;
+  double _currentZoom = 14.5; // ⬅️ Nou: guardar el nivell de zoom actual
 
   @override
   void initState() {
@@ -35,12 +39,12 @@ class _MapScreenState extends State<MapScreen> {
     _userIcon = await _createMarkerIcon(
       const Color(0xFF2196F3),
       Icons.person_pin_circle,
-      60.0,
+      45.0, // ⬅️ Reduït de 60.0 a 45.0
     );
     _barIcon = await _createMarkerIcon(
       const Color(0xFFE53935),
       Icons.sports_bar,
-      60.0,
+      45.0, // ⬅️ Reduït de 60.0 a 45.0
     );
     if (mounted) {
       setState(() {});
@@ -131,10 +135,6 @@ class _MapScreenState extends State<MapScreen> {
           markerId: MarkerId(bar.id),
           position: LatLng(bar.latitude, bar.longitude),
           icon: _barIcon ?? BitmapDescriptor.defaultMarker,
-          infoWindow: InfoWindow(
-            title: '🍺 ${bar.name}',
-            snippet: '${bar.todaysMatches.length} partit${bar.todaysMatches.length != 1 ? 's' : ''} • ${bar.rating}⭐',
-          ),
           anchor: const Offset(0.5, 0.5),
           onTap: () {
             if (mounted) {
@@ -150,6 +150,83 @@ class _MapScreenState extends State<MapScreen> {
         _markers = newMarkers;
       });
     }
+  }
+
+  // Calcular distància entre dos punts
+  double _calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+    const double earthRadius = 6371; // km
+    final dLat = _toRadians(lat2 - lat1);
+    final dLon = _toRadians(lon2 - lon1);
+    final a = sin(dLat / 2) * sin(dLat / 2) +
+        cos(_toRadians(lat1)) * cos(_toRadians(lat2)) *
+        sin(dLon / 2) * sin(dLon / 2);
+    final c = 2 * asin(sqrt(a));
+    return earthRadius * c;
+  }
+
+  double _toRadians(double degrees) => degrees * (pi / 180.0);
+
+  // Construir targeta flotant per cada bar
+  Widget _buildBarLabel(Bar bar, double userLat, double userLng) {
+    final distance = _calculateDistance(userLat, userLng, bar.latitude, bar.longitude);
+    final distanceText = distance < 1 
+        ? '${(distance * 1000).round()}m' 
+        : '${distance.toStringAsFixed(1)}km';
+
+    return FutureBuilder<ScreenCoordinate?>(
+      future: _mapController?.getScreenCoordinate(LatLng(bar.latitude, bar.longitude)),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return const SizedBox.shrink();
+        
+        final screenPos = snapshot.data!;
+        
+        return Positioned(
+          left: screenPos.x.toDouble() - 60, // Centrar la targeta
+          top: screenPos.y.toDouble() - 75, // Posicionar sobre el marker
+          child: GestureDetector(
+            onTap: () {
+              context.read<MapBloc>().add(MapBarSelected(bar));
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    bar.name,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    distanceText,
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -171,7 +248,9 @@ class _MapScreenState extends State<MapScreen> {
             if (state.status == MapStatus.success) {
               _updateMarkers(state);
               
-              if (state.currentLatitude != null &&
+              // Només centrar el mapa la primera vegada que es carrega la ubicació
+              if (!_hasInitializedCamera &&
+                  state.currentLatitude != null &&
                   state.currentLongitude != null &&
                   _mapController != null) {
                 _mapController!.animateCamera(
@@ -180,6 +259,7 @@ class _MapScreenState extends State<MapScreen> {
                     14.5,
                   ),
                 );
+                _hasInitializedCamera = true; // ⬅️ Marcar com inicialitzat
               }
             }
             
@@ -266,6 +346,14 @@ class _MapScreenState extends State<MapScreen> {
                       controller.setMapStyle(MapStyle.minimal);
                     }
                   },
+                  onCameraMove: (position) {
+                    // Actualitzar el zoom actual
+                    if (mounted) {
+                      setState(() {
+                        _currentZoom = position.zoom;
+                      });
+                    }
+                  },
                   initialCameraPosition: CameraPosition(
                     target: LatLng(
                       state.currentLatitude ?? 41.3851,
@@ -278,8 +366,20 @@ class _MapScreenState extends State<MapScreen> {
                   myLocationButtonEnabled: false,
                   zoomControlsEnabled: false,
                   mapToolbarEnabled: false,
+                  rotateGesturesEnabled: true,
+                  tiltGesturesEnabled: true,
                   minMaxZoomPreference: const MinMaxZoomPreference(12, 18),
                 ),
+
+                // Targetes dels bars (només quan zoom > 15.5)
+                if (_currentZoom > 15.5 && state.currentLatitude != null && state.currentLongitude != null)
+                  ...state.nearbyBars.map((bar) {
+                    return _buildBarLabel(
+                      bar,
+                      state.currentLatitude!,
+                      state.currentLongitude!,
+                    );
+                  }),
 
                 // Barra superior
                 Positioned(
@@ -377,14 +477,52 @@ class _MapScreenState extends State<MapScreen> {
                   ),
                 ),
 
-                // Targeta de detalls
-                if (state.selectedBar != null)
-                  Positioned(
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    child: BarDetailsCard(bar: state.selectedBar!),
-                  ),
+                // Targeta de detalls amb animació
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 300),
+                  switchInCurve: Curves.easeOut,
+                  switchOutCurve: Curves.easeIn,
+                  transitionBuilder: (child, animation) {
+                    return SlideTransition(
+                      position: Tween<Offset>(
+                        begin: const Offset(0, 1), // Començar des de baix
+                        end: Offset.zero, // Acabar a la posició normal
+                      ).animate(animation),
+                      child: FadeTransition(
+                        opacity: animation,
+                        child: child,
+                      ),
+                    );
+                  },
+                  child: state.selectedBar != null
+                      ? Stack(
+                          key: ValueKey(state.selectedBar!.id), // Key per animació correcta
+                          children: [
+                            // Overlay per tancar la targeta clicant fora
+                            Positioned.fill(
+                              child: GestureDetector(
+                                onTap: () {
+                                  context.read<MapBloc>().add(const MapBarSelected(null));
+                                },
+                                child: Container(
+                                  color: Colors.black.withOpacity(0.3), // Ombra semitransparent
+                                ),
+                              ),
+                            ),
+                            // Targeta de detalls
+                            Positioned(
+                              bottom: 0,
+                              left: 0,
+                              right: 0,
+                              child: GestureDetector(
+                                onTap: () {}, // Evitar que els clics a la targeta la tanquin
+                                child: BarDetailsCard(bar: state.selectedBar!),
+                              ),
+                            ),
+                          ],
+                        )
+                      : const SizedBox.shrink(), // Widget buit quan no hi ha bar seleccionat
+                ),
               ],
             );
           },

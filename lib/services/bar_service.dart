@@ -13,8 +13,8 @@ class BarService {
   }) async {
     try {
       final now = DateTime.now();
-      final today = DateTime(now.year, now.month, now.day);
-      final tomorrow = today.add(const Duration(days: 1));
+      final today = DateTime(now.year, now.month, now.day); // 00:00:00 d'avui
+      final tomorrow = today.add(const Duration(days: 1)); // 00:00:00 de demà
 
       // ⬇️ IMPORTANT: Només bars actius
       final snapshot = await _firestore
@@ -32,9 +32,11 @@ class BarService {
               bar.longitude,
             );
             
+            // Verificar si té partits dins del rang d'avui
             final hasMatchToday = bar.todaysMatches.any((match) {
-              return match.dateTime.isAfter(today) &&
-                     match.dateTime.isBefore(tomorrow);
+              final matchDate = match.dateTime;
+              final isToday = matchDate.isAfter(today) && matchDate.isBefore(tomorrow);
+              return isToday;
             });
             
             return distance <= radiusKm && hasMatchToday;
@@ -49,6 +51,7 @@ class BarService {
 
       return bars;
     } catch (e) {
+      print('❌ Error en getNearbyBarsWithMatches: $e');
       return [];
     }
   }
